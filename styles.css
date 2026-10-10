@@ -1,0 +1,784 @@
+const STORAGE_KEY = 'bawwaba-state-v1';
+
+const demoUsers = [
+  { id: 'u-admin', username: 'admin', password: 'admin123', role: 'admin', name: 'School Admin' },
+  { id: 'u-gate', username: 'gate', password: 'gate123', role: 'gate', name: 'Gate Staff' },
+  { id: 'u-office', username: 'office', password: 'office123', role: 'office', name: 'Office Desk' }
+];
+
+const demoVehicles = [
+  { id: 'v1', raw: 'أ ب ج ١٢٣٤', code: 'ABJ-1234', guardian: 'Khalid Al-Mansoori', relation: 'Father', students: ['Omar', 'Layla'] },
+  { id: 'v2', raw: 'د هـ و ٥٦٧٨', code: 'DHW-5678', guardian: 'Mariam Al-Suwaidi', relation: 'Mother', students: ['Yousef'] },
+  { id: 'v3', raw: 'ز ح ط ٩٠١٢', code: 'ZHT-9012', guardian: 'Saeed Ahmed', relation: 'Driver', students: ['Noor', 'Hamad', 'Sara'] },
+  { id: 'v4', raw: 'ي ك ل ٣٤٥٦', code: 'YKL-3456', guardian: 'Fatima Al-Hosani', relation: 'Mother', students: ['Rashid'] },
+  { id: 'v5', raw: 'م ن س ٧٨٩٠', code: 'MNS-7890', guardian: 'Ali Hassan', relation: 'Relative', students: ['Aisha'] },
+  { id: 'v6', raw: 'ع ف ص ٢٣٤٥', code: 'AFS-2345', guardian: 'Hind Al-Kaabi', relation: 'Mother', students: ['Majid', 'Dana'] }
+];
+
+const translations = {
+  en: {
+    appName: 'Bawwaba',
+    subtitle: 'School pickup gate',
+    loginTitle: 'School access dashboard',
+    username: 'Username',
+    password: 'Password',
+    signIn: 'Sign in',
+    demoUsers: 'Demo users: admin/admin123 · gate/gate123 · office/office123',
+    invalidLogin: 'Incorrect username or password.',
+    gate: 'Gate',
+    board: 'Board',
+    vehicles: 'Vehicles',
+    log: 'Log',
+    dashboard: 'Dashboard',
+    settings: 'Settings',
+    logout: 'Log out',
+    releasedToday: 'Released today',
+    waitingReview: 'Waiting for review',
+    unknownPlates: 'Unknown plates',
+    avgConfidence: 'Avg. confidence',
+    noScans: 'No scans yet.',
+    manualLookup: 'Manual lookup',
+    simulateScan: 'Simulate scan',
+    release: 'Release',
+    hold: 'Hold',
+    recentScans: 'Recent scans',
+    registerVehicle: 'Register a vehicle',
+    plateArabic: 'Plate (Arabic)',
+    plateCode: 'Code (ABJ-1234)',
+    guardianName: 'Guardian name',
+    relation: 'Relation',
+    students: 'Students',
+    addVehicle: 'Add vehicle',
+    search: 'Search vehicle, guardian or student',
+    remove: 'Remove',
+    resetDemo: 'Reset demo data',
+    theme: 'Dark mode',
+    sound: 'Alert sound',
+    threshold: 'Auto-release threshold',
+    emailOrName: 'Name or guardian',
+    noMatches: 'No vehicles match your search.',
+    completed: 'Handed over',
+    notes: 'Demo mode is stored locally in this browser only.',
+    officeOnly: 'Office access',
+    gateOnly: 'Gate access',
+    adminOnly: 'Admin access',
+    all: 'All',
+    validCode: 'Please use a valid plate format like ABJ-1234',
+    missingVehicleInfo: 'Please fill in plate code, guardian and at least one student.',
+    duplicateVehicle: 'This vehicle already exists.',
+    live: 'Live',
+    notRegistered: 'Not registered',
+    awaitingReview: 'Awaiting review',
+    released: 'Released',
+    rejected: 'Rejected',
+    autoRelease: 'Auto-release threshold',
+    language: 'Language',
+    pendingReview: 'Pending review',
+    operationSummary: 'Operations overview',
+    totalVehicles: 'Registered vehicles',
+    totalScans: 'Total scans',
+    byRole: 'Role access'
+  },
+  ar: {
+    appName: 'بوابة',
+    subtitle: 'بوابة استلام الطلاب',
+    loginTitle: 'لوحة الوصول المدرسية',
+    username: 'اسم المستخدم',
+    password: 'كلمة المرور',
+    signIn: 'تسجيل الدخول',
+    demoUsers: 'المستخدمون التجريبيون: admin/admin123 · gate/gate123 · office/office123',
+    invalidLogin: 'اسم المستخدم أو كلمة المرور غير صحيحة.',
+    gate: 'البوابة',
+    board: 'اللوحة',
+    vehicles: 'المركبات',
+    log: 'السجل',
+    dashboard: 'لوحة التحكم',
+    settings: 'الإعدادات',
+    logout: 'تسجيل الخروج',
+    releasedToday: 'تم التسليم اليوم',
+    waitingReview: 'بانتظار المراجعة',
+    unknownPlates: 'لوحات غير معروفة',
+    avgConfidence: 'متوسط الدقة',
+    noScans: 'لا توجد قراءات بعد.',
+    manualLookup: 'بحث يدوي',
+    simulateScan: 'محاكاة قراءة',
+    release: 'تسليم',
+    hold: 'إيقاف',
+    recentScans: 'آخر القراءات',
+    registerVehicle: 'تسجيل مركبة',
+    plateArabic: 'اللوحة (بالعربية)',
+    plateCode: 'الرمز (ABJ-1234)',
+    guardianName: 'اسم ولي الأمر',
+    relation: 'العلاقة',
+    students: 'الأطفال',
+    addVehicle: 'إضافة مركبة',
+    search: 'ابحث عن مركبة أو ولي أمر أو طالب',
+    remove: 'حذف',
+    resetDemo: 'إعادة ضبط البيانات',
+    theme: 'الوضع الداكن',
+    sound: 'تنبيهات صوتية',
+    threshold: 'عتبة التسليم التلقائي',
+    emailOrName: 'الاسم أو ولي الأمر',
+    noMatches: 'لا توجد مركبات تطابق البحث.',
+    completed: 'تم التسليم',
+    notes: 'الوضع التجريبي يخزن محليًا فقط داخل هذا المتصفح.',
+    officeOnly: 'وصول المكتب',
+    gateOnly: 'وصول البوابة',
+    adminOnly: 'وصول الإدارة',
+    all: 'الكل',
+    validCode: 'يرجى استخدام صيغة لوحة صحيحة مثل ABJ-1234',
+    missingVehicleInfo: 'يرجى إدخال رمز اللوحة واسم ولي الأمر وعلى الأقل طالب واحد.',
+    duplicateVehicle: 'هذه المركبة مسجلة بالفعل.',
+    live: 'مباشر',
+    notRegistered: 'غير مسجلة',
+    awaitingReview: 'بانتظار المراجعة',
+    released: 'تم التسليم',
+    rejected: 'مرفوضة',
+    autoRelease: 'عتبة التسليم التلقائي',
+    language: 'اللغة',
+    pendingReview: 'بانتظار المراجعة',
+    operationSummary: 'ملخص العمليات',
+    totalVehicles: 'المركبات المسجلة',
+    totalScans: 'إجمالي القراءات',
+    byRole: 'وصول حسب الدور'
+  }
+};
+
+const defaultState = {
+  lang: 'en',
+  user: null,
+  activeTab: 'gate',
+  query: '',
+  vehicles: demoVehicles,
+  scans: [],
+  nextId: 200,
+  threshold: 0.9,
+  sound: true,
+  darkMode: false
+};
+
+const state = loadState();
+const appRoot = document.getElementById('app');
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    return { ...defaultState, ...(saved || {}) };
+  } catch (error) {
+    return { ...defaultState };
+  }
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function t(key) {
+  return (translations[state.lang] && translations[state.lang][key]) || key;
+}
+
+function roleAllowed(role) {
+  if (!state.user) return false;
+  if (state.user.role === 'admin') return true;
+  if (role === 'gate') return state.user.role === 'gate' || state.user.role === 'admin';
+  if (role === 'office') return state.user.role === 'office' || state.user.role === 'admin';
+  return false;
+}
+
+function nextId(prefix) {
+  state.nextId += 1;
+  saveState();
+  return `${prefix}-${state.nextId}`;
+}
+
+function findVehicleByCode(code) {
+  const normalized = String(code || '').trim().toUpperCase();
+  return state.vehicles.find(v => v.code.toUpperCase() === normalized);
+}
+
+function addScan(scan) {
+  state.scans.unshift(scan);
+  state.scans = state.scans.slice(0, 120);
+  saveState();
+}
+
+function ensureDemoReset() {
+  if (!state.scans.length && !state.vehicles.length) {
+    state.vehicles = demoVehicles.map(v => ({ ...v, students: [...v.students] }));
+    state.nextId = 200;
+    saveState();
+  }
+}
+
+function randomScan() {
+  const vehicle = state.vehicles[Math.floor(Math.random() * state.vehicles.length)];
+  const confidence = Number((Math.random() * 0.7 + 0.25).toFixed(2));
+  const status = confidence >= state.threshold ? 'released' : 'manual_review';
+  const scan = {
+    id: nextId('scan'),
+    ts: Date.now(),
+    gate: `G${Math.floor(Math.random() * 2) + 1}`,
+    code: vehicle.code,
+    raw: vehicle.raw,
+    guardian: vehicle.guardian,
+    relation: vehicle.relation,
+    students: [...vehicle.students],
+    confidence,
+    status,
+    reason: status === 'released' ? 'Auto matched' : 'Low confidence'
+  };
+  addScan(scan);
+  render();
+}
+
+function handleManualLookup(rawValue) {
+  const code = String(rawValue || '').trim().toUpperCase().replace(/\s+/g, '');
+  if (!code) return;
+
+  const vehicle = findVehicleByCode(code);
+  const scan = {
+    id: nextId('scan'),
+    ts: Date.now(),
+    gate: 'G1',
+    code,
+    raw: vehicle ? vehicle.raw : code,
+    guardian: vehicle ? vehicle.guardian : '',
+    relation: vehicle ? vehicle.relation : 'Other',
+    students: vehicle ? [...vehicle.students] : [],
+    confidence: 1,
+    status: vehicle ? 'released' : 'not_registered',
+    reason: vehicle ? 'Manual lookup' : 'Vehicle not found'
+  };
+
+  addScan(scan);
+  render();
+}
+
+function handleDecision(scanId, approved) {
+  const scan = state.scans.find(item => item.id === scanId);
+  if (!scan) return;
+  scan.status = approved ? 'released' : 'rejected';
+  scan.reason = approved ? 'Approved by staff' : 'Held by staff';
+  saveState();
+  render();
+}
+
+function handleVehicleSubmit(event) {
+  event.preventDefault();
+  const form = new FormData(event.target);
+  const raw = String(form.get('raw') || '').trim();
+  const code = String(form.get('code') || '').trim().toUpperCase();
+  const guardian = String(form.get('guardian') || '').trim();
+  const students = String(form.get('students') || '').split(/[;,،]/).map(s => s.trim()).filter(Boolean);
+
+  if (!code || !guardian || !students.length) {
+    alert(t('missingVehicleInfo'));
+    return;
+  }
+
+  if (!/^[A-Z]{1,3}-\d{1,5}$/.test(code)) {
+    alert(t('validCode'));
+    return;
+  }
+
+  if (state.vehicles.some(v => v.code.toUpperCase() === code)) {
+    alert(t('duplicateVehicle'));
+    return;
+  }
+
+  const vehicle = {
+    id: nextId('veh'),
+    raw: raw || code,
+    code,
+    guardian,
+    relation: form.get('relation') || 'Other',
+    students
+  };
+
+  state.vehicles.unshift(vehicle);
+  saveState();
+  render();
+}
+
+function handleLogin(event) {
+  event.preventDefault();
+  const form = new FormData(event.target);
+  const username = String(form.get('username') || '').trim();
+  const password = String(form.get('password') || '').trim();
+
+  const match = demoUsers.find(u => u.username === username && u.password === password);
+  if (!match) {
+    alert(t('invalidLogin'));
+    return;
+  }
+
+  state.user = match;
+  state.activeTab = 'gate';
+  saveState();
+  render();
+}
+
+function renderLogin() {
+  appRoot.innerHTML = `
+    <div class="login-shell">
+      <div class="login-card">
+        <div class="brand-row">
+          <div class="brand-mark"></div>
+          <div>
+            <div class="brand-name">${t('appName')}</div>
+            <div class="brand-sub">${t('subtitle')}</div>
+          </div>
+        </div>
+
+        <h1>${t('loginTitle')}</h1>
+
+        <form id="loginForm" class="login-form">
+          <label>
+            <span>${t('username')}</span>
+            <input name="username" type="text" required />
+          </label>
+          <label>
+            <span>${t('password')}</span>
+            <input name="password" type="password" required />
+          </label>
+          <button type="submit" class="primary-btn">${t('signIn')}</button>
+        </form>
+
+        <p class="demo-hint">${t('demoUsers')}</p>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('loginForm').addEventListener('submit', handleLogin);
+}
+
+function renderHeaderTabs() {
+  const tabs = [
+    { id: 'gate', label: t('gate'), icon: '🚧', allowed: roleAllowed('gate') },
+    { id: 'board', label: t('board'), icon: '📣', allowed: roleAllowed('gate') },
+    { id: 'vehicles', label: t('vehicles'), icon: '🚗', allowed: roleAllowed('office') || roleAllowed('admin') },
+    { id: 'log', label: t('log'), icon: '📋', allowed: true },
+    { id: 'dashboard', label: t('dashboard'), icon: '📊', allowed: roleAllowed('office') || roleAllowed('admin') },
+    { id: 'settings', label: t('settings'), icon: '⚙️', allowed: true }
+  ].filter(tab => tab.allowed);
+
+  const nav = tabs.map(tab => `
+    <button type="button" class="nav-tab ${state.activeTab === tab.id ? 'active' : ''}" data-tab="${tab.id}">
+      <span>${tab.icon}</span>
+      <span>${tab.label}</span>
+    </button>
+  `).join('');
+
+  return `
+    <header class="topbar">
+      <div class="container shell">
+        <div class="brand-row">
+          <div class="brand-mark"></div>
+          <div>
+            <div class="brand-name">${t('appName')}</div>
+            <div class="brand-sub">${t('subtitle')}</div>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <span class="user-badge">${state.user.role.toUpperCase()}</span>
+          <button class="ghost-btn" id="langToggle">${state.lang === 'en' ? 'العربية' : 'English'}</button>
+          <button class="ghost-btn" id="logoutBtn">${t('logout')}</button>
+        </div>
+      </div>
+
+      <nav class="container tabs" aria-label="Main navigation">
+        ${nav}
+      </nav>
+    </header>
+  `;
+}
+
+function renderGateView() {
+  const latest = state.scans[0];
+  const releasedCount = state.scans.filter(scan => scan.status === 'released').length;
+  const reviewCount = state.scans.filter(scan => scan.status === 'manual_review').length;
+  const unknownCount = state.scans.filter(scan => scan.status === 'not_registered').length;
+  const confidenceAvg = state.scans.length
+    ? Math.round((state.scans.reduce((sum, s) => sum + (Number(s.confidence) || 0), 0) / state.scans.length) * 100)
+    : 0;
+
+  return `
+    <section class="stats-grid">
+      <article class="stat-card"><span>${t('releasedToday')}</span><strong>${releasedCount}</strong></article>
+      <article class="stat-card"><span>${t('waitingReview')}</span><strong>${reviewCount}</strong></article>
+      <article class="stat-card"><span>${t('unknownPlates')}</span><strong>${unknownCount}</strong></article>
+      <article class="stat-card"><span>${t('avgConfidence')}</span><strong>${confidenceAvg}%</strong></article>
+    </section>
+
+    <section class="two-col">
+      <div class="panel detail-panel ${latest ? latest.status : ''}">
+        <h2>${t('gate')}</h2>
+
+        ${latest ? `
+          <div class="plate-box">${latest.code}</div>
+          <div class="detail-head">
+            <h3>${latest.guardian || 'Unknown guardian'}</h3>
+            <span class="status-pill ${latest.status}">${latest.status}</span>
+          </div>
+          <p class="muted">${(latest.students || []).join(', ') || '—'}</p>
+          <div class="progress"><i style="width:${Math.round((latest.confidence || 0) * 100)}%"></i></div>
+          <div class="actions-row">
+            <button class="primary-btn" data-scan-action="release" data-scan-id="${latest.id}">${t('release')}</button>
+            <button class="danger-btn" data-scan-action="hold" data-scan-id="${latest.id}">${t('hold')}</button>
+          </div>
+        ` : `<p class="muted">${t('noScans')}</p>`}
+
+        <form id="lookupForm" class="lookup-form">
+          <input id="lookupInput" type="text" placeholder="${t('manualLookup')}" maxlength="12" />
+          <button class="primary-btn" type="submit">${t('save')}</button>
+        </form>
+
+        <div class="actions-row">
+          <button class="primary-btn" id="simulateScanBtn">${t('simulateScan')}</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>${t('recentScans')}</h2>
+        <div class="scan-list">
+          ${state.scans.length ? state.scans.slice(0, 8).map(scan => `
+            <div class="scan-item ${scan.status}">
+              <div class="scan-top">
+                <strong>${scan.code}</strong>
+                <span>${formatTime(scan.ts)}</span>
+              </div>
+              <div class="muted">${scan.guardian || 'Unknown'} · ${scan.status}</div>
+            </div>
+          `).join('') : `<p class="muted">${t('noScans')}</p>`}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderBoardView() {
+  const released = state.scans.filter(scan => scan.status === 'released');
+
+  return `
+    <section class="panel">
+      <h2>${t('board')}</h2>
+      ${released.length ? `
+        <div class="card-grid">
+          ${released.map(scan => `
+            <div class="board-card">
+              <div class="plate-box small">${scan.code}</div>
+              <h3>${scan.guardian || 'Unknown guardian'}</h3>
+              <p class="muted">${(scan.students || []).join(', ') || '—'}</p>
+              <button class="primary-btn" data-finish-board="${scan.id}">${t('completed')}</button>
+            </div>
+          `).join('')}
+        </div>
+      ` : `<p class="muted">${t('noScans')}</p>`}
+    </section>
+  `;
+}
+
+function renderVehiclesView() {
+  const filtered = state.vehicles.filter(vehicle => {
+    if (!state.query) return true;
+    const haystack = [vehicle.code, vehicle.guardian, vehicle.students.join(' ')].join(' ').toLowerCase();
+    return haystack.includes(state.query.toLowerCase());
+  });
+
+  return `
+    <section class="panel"><h2>${t('registerVehicle')}</h2>
+      <form id="vehicleForm" class="vehicle-form">
+        <input name="raw" type="text" placeholder="${t('plateArabic')}" />
+        <input name="code" type="text" placeholder="${t('plateCode')}" />
+        <input name="guardian" type="text" placeholder="${t('guardianName')}" />
+        <select name="relation">
+          <option value="Father">Father</option>
+          <option value="Mother">Mother</option>
+          <option value="Driver">Driver</option>
+          <option value="Relative">Relative</option>
+          <option value="Other">Other</option>
+        </select>
+        <input name="students" type="text" placeholder="${t('students')}" />
+        <button class="primary-btn" type="submit">${t('addVehicle')}</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="list-header">
+        <h2>${t('vehicles')}</h2>
+        <input id="vehicleSearch" type="search" placeholder="${t('search')}" value="${state.query}" />
+      </div>
+
+      ${filtered.length ? `
+        <div class="table-list">
+          ${filtered.map(vehicle => `
+            <div class="table-row">
+              <div class="plate-box tiny">${vehicle.code}</div>
+              <div>
+                <strong>${vehicle.guardian}</strong>
+                <div class="muted">${vehicle.students.join(', ')}</div>
+              </div>
+              <button class="ghost-btn danger" data-delete-vehicle="${vehicle.id}">${t('remove')}</button>
+            </div>
+          `).join('')}
+        </div>
+      ` : `<p class="muted">${t('noMatches')}</p>`}
+    </section>
+  `;
+}
+
+function renderLogView() {
+  const bars = Array.from({ length: 10 }, (_, idx) => {
+    const ms = (9 - idx) * 60 * 1000;
+    const now = Date.now();
+    const bucket = state.scans.filter(scan => now - scan.ts >= ms && now - scan.ts < ms + 60 * 1000).length;
+    return { bucket, height: 18 + bucket * 20 };
+  });
+
+  return `
+    <section class="panel">
+      <h2>${t('log')}</h2>
+      <div class="chart-grid">
+        ${bars.map(bar => `
+          <div class="bar-column">
+            <span>${bar.bucket}</span>
+            <i style="height:${bar.height}%"></i>
+          </div>
+        `).join('')}
+      </div>
+
+      <div class="scan-log">
+        ${state.scans.length ? state.scans.slice(0, 12).map(scan => `
+          <div class="log-row">
+            <span>${scan.code}</span>
+            <span>${scan.status}</span>
+            <span>${formatTime(scan.ts)}</span>
+          </div>
+        `).join('') : `<p class="muted">${t('noScans')}</p>`}
+      </div>
+    </section>
+  `;
+}
+
+function renderDashboardView() {
+  const totalVehicles = state.vehicles.length;
+  const totalScans = state.scans.length;
+  const releasedCount = state.scans.filter(scan => scan.status === 'released').length;
+  const pendingCount = state.scans.filter(scan => scan.status === 'manual_review').length;
+
+  return `
+    <section class="panel">
+      <h2>${t('operationSummary')}</h2>
+      <div class="stats-grid">
+        <article class="stat-card"><span>${t('totalVehicles')}</span><strong>${totalVehicles}</strong></article>
+        <article class="stat-card"><span>${t('releasedToday')}</span><strong>${releasedCount}</strong></article>
+        <article class="stat-card"><span>${t('pendingReview')}</span><strong>${pendingCount}</strong></article>
+        <article class="stat-card"><span>${t('totalScans')}</span><strong>${totalScans}</strong></article>
+      </div>
+
+      <div class="role-grid">
+        <div class="mini-panel">
+          <h3>${t('byRole')}</h3>
+          <ul>
+            <li>${t('adminOnly')} — full access</li>
+            <li>${t('gateOnly')} — gate and release actions</li>
+            <li>${t('officeOnly')} — vehicles and reports</li>
+          </ul>
+        </div>
+        <div class="mini-panel">
+          <h3>${t('settings')}</h3>
+          <div class="settings-stack">
+            <label class="switch-row">
+              <span>${t('theme')}</span>
+              <input type="checkbox" id="darkModeToggle" ${state.darkMode ? 'checked' : ''} />
+            </label>
+            <label class="switch-row">
+              <span>${t('sound')}</span>
+              <input type="checkbox" id="soundToggle" ${state.sound ? 'checked' : ''} />
+            </label>
+            <label class="range-row">
+              <span>${t('threshold')}</span>
+              <input id="thresholdRange" type="range" min="60" max="99" value="${Math.round(state.threshold * 100)}" />
+            </label>
+            <button class="ghost-btn" id="resetDemoBtn">${t('resetDemo')}</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderSettingsView() {
+  return `
+    <section class="panel">
+      <h2>${t('settings')}</h2>
+      <div class="settings-stack">
+        <label class="switch-row"><span>${t('theme')}</span><input type="checkbox" id="darkModeToggle2" ${state.darkMode ? 'checked' : ''} /></label>
+        <label class="switch-row"><span>${t('sound')}</span><input type="checkbox" id="soundToggle2" ${state.sound ? 'checked' : ''} /></label>
+        <label class="range-row"><span>${t('threshold')}</span><input id="thresholdRange2" type="range" min="60" max="99" value="${Math.round(state.threshold * 100)}" /></label>
+        <button class="ghost-btn" id="resetDemoBtn2">${t('resetDemo')}</button>
+      </div>
+    </section>
+  `;
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderApp() {
+  if (!state.user) {
+    renderLogin();
+    return;
+  }
+
+  const view = (() => {
+    if (state.activeTab === 'board') return renderBoardView();
+    if (state.activeTab === 'vehicles') return renderVehiclesView();
+    if (state.activeTab === 'log') return renderLogView();
+    if (state.activeTab === 'dashboard') return renderDashboardView();
+    if (state.activeTab === 'settings') return renderSettingsView();
+    return renderGateView();
+  })();
+
+  appRoot.innerHTML = `
+    ${renderHeaderTabs()}
+    <main class="container page">
+      ${view}
+      <p class="footer-note">${t('notes')}</p>
+    </main>
+  `;
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    state.user = null;
+    saveState();
+    render();
+  });
+
+  document.getElementById('langToggle').addEventListener('click', () => {
+    state.lang = state.lang === 'en' ? 'ar' : 'en';
+    document.documentElement.lang = state.lang;
+    document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+    saveState();
+    render();
+  });
+
+  document.querySelectorAll('[data-tab]').forEach(button => {
+    button.addEventListener('click', () => {
+      state.activeTab = button.dataset.tab;
+      saveState();
+      render();
+    });
+  });
+
+  const simulateBtn = document.getElementById('simulateScanBtn');
+  if (simulateBtn) simulateBtn.addEventListener('click', randomScan);
+
+  const lookupForm = document.getElementById('lookupForm');
+  if (lookupForm) {
+    lookupForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const input = document.getElementById('lookupInput');
+      handleManualLookup(input.value);
+      input.value = '';
+    });
+  }
+
+  document.querySelectorAll('[data-scan-action]').forEach(button => {
+    button.addEventListener('click', () => {
+      handleDecision(button.dataset.scanId, button.dataset.scanAction === 'release');
+    });
+  });
+
+  document.querySelectorAll('[data-finish-board]').forEach(button => {
+    button.addEventListener('click', () => {
+      const scan = state.scans.find(item => item.id === button.dataset.finishBoard);
+      if (scan) {
+        scan.status = 'released';
+        scan.reason = 'Completed';
+        saveState();
+        render();
+      }
+    });
+  });
+
+  const vehicleForm = document.getElementById('vehicleForm');
+  if (vehicleForm) {
+    vehicleForm.addEventListener('submit', handleVehicleSubmit);
+  }
+
+  const vehicleSearch = document.getElementById('vehicleSearch');
+  if (vehicleSearch) {
+    vehicleSearch.addEventListener('input', event => {
+      state.query = event.target.value;
+      saveState();
+      render();
+    });
+  }
+
+  document.querySelectorAll('[data-delete-vehicle]').forEach(button => {
+    button.addEventListener('click', () => {
+      const id = button.dataset.deleteVehicle;
+      state.vehicles = state.vehicles.filter(vehicle => vehicle.id !== id);
+      saveState();
+      render();
+    });
+  });
+
+  const themeToggle = document.getElementById('darkModeToggle') || document.getElementById('darkModeToggle2');
+  if (themeToggle) {
+    themeToggle.addEventListener('change', () => {
+      state.darkMode = themeToggle.checked;
+      document.body.classList.toggle('dark', state.darkMode);
+      saveState();
+    });
+  }
+
+  const soundToggle = document.getElementById('soundToggle') || document.getElementById('soundToggle2');
+  if (soundToggle) {
+    soundToggle.addEventListener('change', () => {
+      state.sound = soundToggle.checked;
+      saveState();
+    });
+  }
+
+  const thresholdRange = document.getElementById('thresholdRange') || document.getElementById('thresholdRange2');
+  if (thresholdRange) {
+    thresholdRange.addEventListener('input', () => {
+      state.threshold = Number(thresholdRange.value) / 100;
+      saveState();
+    });
+  }
+
+  const resetDemoBtn = document.getElementById('resetDemoBtn') || document.getElementById('resetDemoBtn2');
+  if (resetDemoBtn) {
+    resetDemoBtn.addEventListener('click', () => {
+      state.vehicles = demoVehicles.map(v => ({ ...v, students: [...v.students] }));
+      state.scans = [];
+      state.nextId = 200;
+      state.threshold = 0.9;
+      state.query = '';
+      saveState();
+      render();
+    });
+  }
+
+  document.body.classList.toggle('dark', Boolean(state.darkMode));
+}
+
+function render() {
+  ensureDemoReset();
+  document.documentElement.lang = state.lang;
+  document.documentElement.dir = state.lang === 'ar' ? 'rtl' : 'ltr';
+  renderApp();
+}
+
+render();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
